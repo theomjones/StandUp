@@ -65,16 +65,9 @@ export async function addEntry(entry: EntryInput) {
     await db.write();
 }
 
-export async function getEntries() {
-    const db = await getDB();
-
-    return db.data.days;
-}
-
 export async function getDaysByDateDescending(): Promise<Data> {
     const db = await getDB();
     return sortData(db.data);
-    ;
 }
 
 export async function deleteEntry(id: string) {
@@ -88,20 +81,6 @@ export async function deleteEntry(id: string) {
         delete entries[id];
     }
     await db.write();
-}
-
-export function dataToArrayData(input: Data) {
-    const days = input.days;
-    const output = [];
-
-    for (const day in days) {
-        const entries = days[day];
-        const entriesArray = Object.values(entries);
-        output.push({
-            day,
-            entries: entriesArray,
-        })
-    }
 }
 
 const sortData = (data: Data): Data => {

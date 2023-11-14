@@ -37,6 +37,6 @@ export function SummariseDayAction(props: { day?: Record<string, Entry> }) {
   }
 
   return (
-    <Action.Push title="Open AI summary" icon={Icon.Stars} target={<Summariser day={props.day} />} />
+    <Action.Push title="Open AI Summary" icon={Icon.Stars} target={<Summariser day={props.day} />} />
   )
 }

@@ -20,6 +20,6 @@ export function CopyDayMarkdownAction(props: { day?: Record<string, Entry> }) {
 
     const markdown = dayToMarkdown(props.day);
     return (
-        <Action.CopyToClipboard title="Copy day's markdown" content={markdown} />
+        <Action.CopyToClipboard title="Copy Day's Markdown" content={markdown} />
     )
 }
