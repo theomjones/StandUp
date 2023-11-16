@@ -7,12 +7,12 @@ import isTomorrow from "dayjs/plugin/isTomorrow";
 import isYesterday from "dayjs/plugin/isYesterday";
 import relative from "dayjs/plugin/relativeTime";
 import { useState } from "react";
-import { useAsync } from "react-use";
 import { deleteAllForDay, deleteEntry, EntryType, FORMAT_KEY, getDaysByDateDescending } from "./api";
 import { CopyDayMarkdownAction } from "./utils/copy-markdown";
 import { SummariseDayAction } from "./utils/summarise-day";
 import ActionStyle = Alert.ActionStyle;
 import { EditNoteAction } from "./components/edit-note";
+import { useCachedPromise } from "@raycast/utils";
 
 function NewNoteAction() {
   return (
@@ -45,28 +45,30 @@ function isThisWeek(date: Dayjs) {
 
 export default function Command() {
   const [filter, setFilter] = useState("all");
-  const [mutateCount, setMutateCount] = useState(0);
-  const data = useAsync(async () => {
-    const resp = await getDaysByDateDescending();
-    const filteredDayKeys = Object.keys(resp.days).filter((key) => {
-      if (filter === "all") {
-        return true;
-      }
-      return key === filter;
-    });
+  const { data, isLoading, revalidate } = useCachedPromise(
+    async (filter: string) => {
+      const resp = await getDaysByDateDescending();
+      const filteredDayKeys = Object.keys(resp.days).filter((key) => {
+        if (filter === "all") {
+          return true;
+        }
+        return key === filter;
+      });
 
-    const filteredDays: (typeof resp)["days"] = {};
+      const filteredDays: (typeof resp)["days"] = {};
 
-    filteredDayKeys.forEach((key) => {
-      filteredDays[key] = resp.days[key];
-    });
+      filteredDayKeys.forEach((key) => {
+        filteredDays[key] = resp.days[key];
+      });
 
-    return {
-      days: filteredDays,
-    };
-  }, [filter, mutateCount]);
+      return {
+        days: filteredDays,
+      };
+    },
+    [filter],
+  );
 
-  const keys = Object.keys(data?.value?.days || {});
+  const keys = Object.keys(data?.days || {});
 
   const dropdownItems = [
     {
@@ -81,7 +83,7 @@ export default function Command() {
 
   return (
     <List
-      isLoading={data.loading}
+      isLoading={isLoading}
       navigationTitle="Your standup notes"
       searchBarAccessory={
         <List.Dropdown onChange={setFilter} tooltip="Filter by day">
@@ -106,7 +108,7 @@ export default function Command() {
 
         const sectionTitle = getSectionTitle(date);
 
-        const entries = data.value?.days[key] ? Object.values(data.value.days[key]) : [];
+        const entries = data?.days.days[key] ? Object.values(data.days[key]) : [];
 
         return (
           <List.Section title={sectionTitle} key={key}>
@@ -147,8 +149,8 @@ export default function Command() {
                     <ActionPanel>
                       <EditNoteAction entry={entry} />
                       <NewNoteAction />
-                      <CopyDayMarkdownAction day={data.value?.days[key]} />
-                      <SummariseDayAction day={data.value?.days[key]} />
+                      <CopyDayMarkdownAction day={data?.days[key]} />
+                      <SummariseDayAction day={data?.days[key]} />
                       <Action
                         shortcut={{
                           key: "backspace",
@@ -156,7 +158,7 @@ export default function Command() {
                         }}
                         onAction={async () => {
                           await deleteEntry(entry.id);
-                          setMutateCount((p) => p + 1);
+                          revalidate();
                         }}
                         title="Delete"
                         icon={Icon.Trash}
@@ -183,7 +185,7 @@ export default function Command() {
                             return;
                           }
                           await deleteAllForDay(date);
-                          setMutateCount((p) => p + 1);
+                          revalidate();
                         }}
                       />
                     </ActionPanel>
